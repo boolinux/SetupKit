@@ -1,3 +1,7 @@
+chcp 65001 | Out-Null
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 # ==========================================================
 # TitanDeploy Pro v1.0.0
 # Enterprise Deployment Edition
