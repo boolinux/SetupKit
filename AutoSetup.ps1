@@ -91,7 +91,7 @@ function Write-Status($msg, $color="White") {
 # ==============================
 # ASK DISK SPLIT
 # ==============================
-$response = Read-Host "Bạn có muốn chia ổ cứng không? (Y/N)"
+$response = Read-Host "Do you want to split the disk? (Y/N)"
 $DoSplit = $response -match "^[Yy]$"
 
 
@@ -100,16 +100,16 @@ $DoSplit = $response -match "^[Yy]$"
 # ==============================
 function Install-App($name, $id) {
 
-    Write-Status "Đang kiểm tra $name..." "Cyan"
+    Write-Status "Checking $name..." "Cyan"
 
     $installed = winget list --id $id -e 2>$null
 
     if ($installed) {
-        Write-Status "$name đã tồn tại." "Yellow"
+        Write-Status "$name is already installed." "Yellow"
         return
     }
 
-    Write-Status "Đang cài $name..." "Cyan"
+    Write-Status "Installing $name..." "Cyan"
 
     winget install --id $id -e --silent `
         --accept-source-agreements `
@@ -117,9 +117,9 @@ function Install-App($name, $id) {
         --scope machine
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Status "Đã cài xong $name." "Green"
+        Write-Status "$name installed successfully." "Green"
     } else {
-        Write-Status "Lỗi cài $name." "Red"
+        Write-Status "Failed to install $name." "Red"
         $global:ErrorOccurred = $true
     }
 }
@@ -172,7 +172,7 @@ Install-App "AnyDesk" "AnyDeskSoftwareGmbH.AnyDesk"
 # ==============================
 # CREATE OFFICE SHORTCUTS
 # ==============================
-Write-Status "Tạo shortcut Office..." "Cyan"
+Write-Status "Creating Office shortcuts..." "Cyan"
 
 $desktop = [Environment]::GetFolderPath("Desktop")
 $officeBases = @(
@@ -217,10 +217,10 @@ try {
         Set-ItemProperty -Path $regPath -Name $i -Value 0 -Force
     }
 
-    Write-Status "Đã bật icon hệ thống." "Green"
+    Write-Status "System icons enabled." "Green"
 }
 catch {
-    Write-Status "Lỗi bật icon hệ thống." "Red"
+    Write-Status "Failed to enable system icons." "Red"
     $ErrorOccurred = $true
 }
 
@@ -238,10 +238,10 @@ if ($winVer -like "*Windows 11*") {
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" `
         /v SearchboxTaskbarMode /t REG_DWORD /d 1 /f | Out-Null
 
-        Write-Status "Đã tối ưu Taskbar Windows 11." "Green"
+        Write-Status "Windows 11 taskbar optimized." "Green"
     }
     catch {
-        Write-Status "Lỗi chỉnh Taskbar." "Red"
+        Write-Status "Taskbar configuration failed." "Red"
         $ErrorOccurred = $true
     }
 }
@@ -253,22 +253,22 @@ if ($winVer -like "*Windows 11*") {
 if ($DoSplit) {
     try {
         if (Get-Partition -DriveLetter D -ErrorAction SilentlyContinue) {
-            Write-Status "Ổ D đã tồn tại. Bỏ qua chia ổ." "Yellow"
+            Write-Status "Drive D already exists. Skipping partition split." "Yellow"
         }
         else {
             $volume = Get-Volume -DriveLetter C
             $freeGB = [math]::Round($volume.SizeRemaining/1GB)
 
             if ($freeGB -lt 60) {
-                Write-Status "Dung lượng trống quá thấp để chia ổ." "Red"
+                Write-Status "Insufficient free space to split the disk." "Red"
             }
             else {
                 if ($freeGB -gt 400) { $newSize = 200GB }
                 elseif ($freeGB -gt 200) { $newSize = 100GB }
                 elseif ($freeGB -gt 100) { $newSize = 50GB }
-                else { throw "Không đủ dung lượng." }
+                else { throw "Not enough space." }
 
-                Write-Status "Đang chia ổ..." "Cyan"
+                Write-Status "Splitting disk..." "Cyan"
 
                 Resize-Partition -DriveLetter C -Size ($volume.Size - $newSize)
 
@@ -279,12 +279,12 @@ if ($DoSplit) {
                     Format-Volume -FileSystem NTFS `
                     -NewFileSystemLabel "DATA" -Confirm:$false
 
-                Write-Status "Chia ổ thành công." "Green"
+                Write-Status "Disk split completed successfully." "Green"
             }
         }
     }
     catch {
-        Write-Status "Lỗi khi chia ổ: $_" "Red"
+        Write-Status "Error while splitting disk: $_" "Red"
         $ErrorOccurred = $true
     }
 }
@@ -307,10 +307,10 @@ Invoke-WindowsUpdate
 # RESTART IF CLEAN
 # ==============================
 if (-not $ErrorOccurred) {
-    Write-Status "Deployment hoàn tất! Restart sau 5 giây..." "Green"
+    Write-Status "Deployment completed successfully! Restarting in 5 seconds..." "Green"
     Start-Sleep 5
     Restart-Computer -Force
 }
 else {
-    Write-Status "Hoàn tất nhưng có lỗi. Không restart." "Yellow"
+    Write-Status "Deployment completed with errors. Restart canceled." "Yellow"
 }
